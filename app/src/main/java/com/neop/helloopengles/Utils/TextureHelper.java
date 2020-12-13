@@ -13,23 +13,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 
-import static android.opengl.GLES20.GL_LINEAR;
-import static android.opengl.GLES20.GL_LINEAR_MIPMAP_LINEAR;
-import static android.opengl.GLES20.GL_TEXTURE_2D;
-import static android.opengl.GLES20.GL_TEXTURE_CUBE_MAP;
-import static android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_NEGATIVE_X;
-import static android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_NEGATIVE_Y;
-import static android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
-import static android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_POSITIVE_X;
-import static android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_POSITIVE_Y;
-import static android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
-import static android.opengl.GLES20.GL_TEXTURE_MAG_FILTER;
-import static android.opengl.GLES20.GL_TEXTURE_MIN_FILTER;
-import static android.opengl.GLES20.glBindTexture;
-import static android.opengl.GLES20.glDeleteTextures;
-import static android.opengl.GLES20.glGenTextures;
-import static android.opengl.GLES20.glGenerateMipmap;
-import static android.opengl.GLES20.glTexParameteri;
+import static android.opengl.GLES20.*;
 import static android.opengl.GLUtils.texImage2D;
 
 public class TextureHelper {
@@ -166,5 +150,30 @@ public class TextureHelper {
         }
 
         return textureObjectIds[0];
+    }
+
+    public static void initYUVTextures(int[] YUVTextures)
+    {
+        //Init Texture
+        glGenTextures(3, YUVTextures, 0);
+
+        glBindTexture(GL_TEXTURE_2D, YUVTextures[0]);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glBindTexture(GL_TEXTURE_2D, YUVTextures[1]);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glBindTexture(GL_TEXTURE_2D, YUVTextures[2]);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
     }
 }

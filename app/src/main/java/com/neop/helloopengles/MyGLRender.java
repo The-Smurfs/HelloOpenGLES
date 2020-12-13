@@ -6,6 +6,7 @@ import android.opengl.GLSurfaceView;
 
 import com.neop.helloopengles.Graphics.MyMediaPlayer;
 import com.neop.helloopengles.Graphics.Triangle;
+import com.neop.helloopengles.Utils.CameraHelper;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -14,6 +15,7 @@ public class MyGLRender implements GLSurfaceView.Renderer {
     Context mContext;
     Triangle triangle;
     MyMediaPlayer mediaplayer;
+    CameraHelper mCamera;
     public MyGLRender(Context context)
     {
         mContext = context;
@@ -32,6 +34,8 @@ public class MyGLRender implements GLSurfaceView.Renderer {
         GLES30.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         //triangle = new Triangle(mContext);
         mediaplayer = new MyMediaPlayer(mContext);
+        if (mCamera != null)
+            mCamera.addCameraListener(mediaplayer);
     }
 
     @Override
@@ -47,5 +51,15 @@ public class MyGLRender implements GLSurfaceView.Renderer {
 
         //triangle.Draw();
         mediaplayer.play();
+    }
+
+    public MyMediaPlayer getMediaPlayer()
+    {
+        return mediaplayer;
+    }
+
+    public  void setCamera(CameraHelper camera)
+    {
+        mCamera = camera;
     }
 }

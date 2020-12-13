@@ -2,11 +2,13 @@ package com.neop.helloopengles.Graphics;
 
 import android.content.Context;
 import android.opengl.GLES30;
+import android.opengl.Matrix;
 import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
 import com.neop.helloopengles.R;
+import com.neop.helloopengles.Utils.CameraHelper;
 import com.neop.helloopengles.Utils.ShaderHelper;
 import com.neop.helloopengles.Utils.TextureHelper;
 
@@ -17,13 +19,13 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 
-public class MyMediaPlayer {
+public class MyMediaPlayer implements CameraHelper.CameraListener {
     private final float[] mVerticesData =
             {
-                    -0.5f, 0.5f, 0.0f,
-                    -0.5f, -0.5f, 0.0f,
-                    0.5f, -0.5f, 0.0f,
-                    0.5f, 0.5f, 0.0f
+                    -0.8f, 0.8f, 0.0f,
+                    -0.8f, -0.8f, 0.0f,
+                    0.8f, -0.8f, 0.0f,
+                    0.8f, 0.8f, 0.0f
             };
 
     private final float[] mColorsData =
@@ -54,6 +56,12 @@ public class MyMediaPlayer {
     private static final int COLOR_COMPONENT_COUNT = 4;
     private static final int TEXTURE_COMPONENT_COUNT = 2;
     private static final int INDEX_COMPONENT_COUNT = 1;
+
+
+    private final float[] mMVPMatrix = new float[16];
+    private final float[] mProjectionMatrix = new float[16];
+    private final float[] mViewMatrix = new float[16];
+
     private Context mContext;
     private int mProgramObject;
     private int uTextureContainer, containerTexture;
@@ -63,6 +71,11 @@ public class MyMediaPlayer {
     private FloatBuffer mTextureBuffer;
     private ShortBuffer mIndicesBuffer;
     private int mVAO, mVBO, mCBO, mTBO, mEBO;
+
+    private int[] mYUVTextureIds = new int[3];
+    ByteBuffer mBufferY,mBufferU,mBufferV, mBufferUV;
+    int pixelWidth, pixelHeight;
+    boolean mBufferChnaged;
 
     public MyMediaPlayer(Context context)
     {
@@ -102,8 +115,10 @@ public class MyMediaPlayer {
 
         loadBufferData();
 
+        TextureHelper.initYUVTextures(mYUVTextureIds);
 
         containerTexture = TextureHelper.loadTexture(mContext, R.mipmap.william);
+        setMatrix();
     }
 
     private void loadBufferData() {
@@ -170,18 +185,65 @@ public class MyMediaPlayer {
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, containerTexture);
         GLES30.glUniform1i(uTextureContainer, 0);
 
-        /*GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
-        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, id_y);
-        GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_LUMINANCE, width, height, 0, GLES30.GL_LUMINANCE, GLES30.GL_UNSIGNED_BYTE, data);
-        GLES30.glUniform1i(gvImageTextureY, 0);
 
-        GLES30.glActiveTexture(GLES30.GL_TEXTURE1);
-        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, id_uv);
-        GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_LUMINANCE_ALPHA, width/2, height/2, 0, GLES30.GL_LUMINANCE_ALPHA, GLES30.GL_UNSIGNED_BYTE, data + width*height);
-        GLES30.glUniform1i(gvImageTextureUV, 1);*/
+        int uMatrixLocation = GLES30.glGetUniformLocation(mProgramObject, "uMVPMatrix");
+        GLES30.glUniformMatrix4fv(uMatrixLocation, 1, false, mMVPMatrix, 0);
+
+        if (mBufferChnaged) {
+            int gvImageTextureY = GLES30.glGetUniformBlockIndex(mProgramObject, "yTexture");
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, mYUVTextureIds[0]);
+            GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_LUMINANCE, pixelWidth, pixelHeight, 0, GLES30.GL_LUMINANCE, GLES30.GL_UNSIGNED_BYTE, mBufferY);
+            GLES30.glUniform1i(gvImageTextureY, 0);
+
+            int gvImageTextureUV = GLES30.glGetUniformBlockIndex(mProgramObject, "uvTexture");
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE1);
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, mYUVTextureIds[1]);
+            GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_LUMINANCE_ALPHA, pixelWidth / 2, pixelHeight / 2, 0, GLES30.GL_LUMINANCE_ALPHA, GLES30.GL_UNSIGNED_BYTE, mBufferUV);
+            GLES30.glUniform1i(gvImageTextureUV, 1);
+
+            /*int gvImageTextureV = GLES30.glGetUniformBlockIndex(mProgramObject, "vTexture");
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE2);
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, mYUVTextureIds[2]);
+            GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_LUMINANCE, pixelWidth / 2, pixelHeight / 2, 0, GLES30.GL_LUMINANCE, GLES30.GL_UNSIGNED_BYTE, mBufferU);
+            GLES30.glUniform1i(gvImageTextureV, 2);*/
+        }
 
 
         GLES30.glBindVertexArray(mVAO);
         GLES30.glDrawElements(GLES30.GL_TRIANGLES, mIndicesData.length, GLES30.GL_UNSIGNED_SHORT, 0);
     }
+
+    @Override
+    public void getYUVData(ByteBuffer ChannelY, ByteBuffer ChannelUV, int width, int height) {
+        pixelWidth = width;
+        pixelHeight = height;
+        mBufferY = ChannelY;
+        mBufferUV = ChannelUV;
+        //mBufferV = ChannelV;
+        mBufferChnaged = true;
+    }
+
+    @Override
+    public void onPreviewFrame(final byte[] data, int width, int height)
+    {
+        pixelWidth = width;
+        pixelHeight = height;
+        mBufferY = ByteBuffer.allocate(width*height).order(ByteOrder.nativeOrder());
+        mBufferY.put(data, 0, width*height);
+        mBufferY.position(0);
+        mBufferU = ByteBuffer.allocate(width*height/4).order(ByteOrder.nativeOrder());
+        mBufferU.put(data, width*height, width*height/4);
+        mBufferU.position(0);
+        mBufferV = ByteBuffer.allocate(width*height/4).order(ByteOrder.nativeOrder());
+        mBufferV.put(data, width*height*5/4, width*height/4);
+        mBufferV.position(0);
+        mBufferChnaged = true;
+    }
+
+    private void setMatrix() {
+        Matrix.setIdentityM(mMVPMatrix, 0);
+        Matrix.rotateM(mMVPMatrix, 0, -90, 0f, 0f, 1f);
+    }
+
 }

@@ -6,6 +6,7 @@ import android.util.AttributeSet;
 
 public class MyGLSurfaceView  extends GLSurfaceView {
     Context mContext;
+    MyGLRender mRender;
     public MyGLSurfaceView(Context context) {
         this(context, null);
         mContext = context;
@@ -22,7 +23,12 @@ public class MyGLSurfaceView  extends GLSurfaceView {
         // 设置EGLContext客户端使用OpenGL ES3.0版本
         setEGLContextClientVersion(3);
         // 设置渲染器到surfaceView上
-        MyGLRender mRender = new MyGLRender(mContext);
+        mRender = new MyGLRender(mContext);
         setRenderer(mRender);
+    }
+
+    public MyGLRender getRender()
+    {
+        return mRender;
     }
 }
